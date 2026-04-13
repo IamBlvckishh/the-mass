@@ -5,141 +5,169 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>THE ETERNAL RELAY</title>
     <style>
-        :root { --bg: #000; --fg: #fff; --red: #ff4500; }
-        body { background: var(--bg); color: var(--fg); font-family: 'Courier New', monospace; margin: 0; display: grid; grid-template-rows: 50px 1fr 180px; height: 100vh; text-transform: uppercase; overflow: hidden;}
+        :root { --bg: #000; --fg: #fff; --red: #ff0000; }
+        body { 
+            background: var(--bg); color: var(--fg); 
+            font-family: 'Courier New', monospace; margin: 0; 
+            display: grid; grid-template-rows: 50px 1fr 180px; 
+            height: 100vh; text-transform: uppercase; overflow: hidden;
+        }
         
         #billboard { border-bottom: 1px solid var(--fg); display: flex; align-items: center; overflow: hidden; font-size: 0.8rem; }
-        .ticker { white-space: nowrap; animation: scroll 20s linear infinite; }
+        .ticker { white-space: nowrap; animation: scroll 30s linear infinite; }
         @keyframes scroll { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
 
         #arena { display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-        #timer { font-size: 2.5rem; font-weight: bold; margin-bottom: 10px; }
+        #timer { font-size: 3rem; font-weight: 900; margin-bottom: 20px; letter-spacing: -2px; }
         
-        /* THE TORCH STRUCTURE */
-        #torch-container { display: flex; flex-direction: column; align-items: center; }
-        #flame-ascii { font-size: 8px; line-height: 8px; color: var(--fg); min-height: 150px; }
-        #torch-handle { 
+        /* THE BOX FLAME GRID */
+        #flame-grid { 
             display: grid; 
-            grid-template-columns: repeat(10, 15px); 
-            gap: 2px; 
-            border: 2px solid var(--fg); 
-            padding: 5px; 
-            background: #111;
+            grid-template-columns: repeat(7, 20px); /* Shaped like a torch tip */
+            grid-template-rows: repeat(15, 20px);
+            gap: 4px; 
+            justify-content: center;
         }
-        .slot { width: 15px; height: 15px; border: 1px solid #444; font-size: 10px; display: flex; align-items: center; justify-content: center; }
-        .slot.active { color: var(--fg); }
-        .slot.corrupted { color: var(--red); font-weight: bold; animation: glitch 0.2s infinite; }
-        
-        @keyframes glitch { 0% { transform: translate(1px); } 50% { transform: translate(-1px); } 100% { transform: translate(0); } }
 
+        .pixel { 
+            width: 20px; height: 20px; border: 1px solid #333; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 10px; transition: all 0.3s;
+        }
+
+        .active { border-color: var(--fg); color: var(--fg); background: rgba(255,255,255,0.1); }
+        .corrupted { border-color: var(--red); color: var(--red); animation: shake 0.1s infinite; font-weight: bold; }
+        .empty { border: 1px solid transparent; color: transparent; }
+
+        @keyframes shake { 0% { transform: translate(1px); } 100% { transform: translate(-1px); } }
+
+        /* THE RITUAL CONTROLS */
         #ritual { border-top: 1px solid var(--fg); padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
-        #striker-track { width: 300px; height: 40px; border: 1px solid var(--fg); position: relative; }
-        #match { width: 50px; height: 100%; background: var(--fg); position: absolute; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; font-size: 10px; }
+        #striker-track { width: 320px; height: 50px; border: 1px solid var(--fg); position: relative; display: flex; align-items: center; }
+        #match { width: 60px; height: 100%; background: var(--fg); position: absolute; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; font-size: 11px; }
 
-        .btn-group { display: flex; gap: 20px; font-size: 0.7rem; }
-        .active-side { text-decoration: underline; font-weight: bold; }
+        .faction-toggle { display: flex; gap: 30px; font-size: 0.8rem; cursor: pointer; margin-bottom: 5px; }
+        .selected { text-decoration: underline; font-weight: 900; }
+        
+        #handle-base { width: 60px; height: 40px; border: 2px solid var(--fg); border-top: none; margin-top: -2px; }
     </style>
 </head>
 <body>
 
     <div id="billboard">
-        <div class="ticker">[ WAR UPDATE ] VOID HAS CORRUPTED 12 SLOTS // HEART KING DEFENDING THE TOP FLAME // [ WAR UPDATE ]</div>
+        <div class="ticker">[ SYSTEM ] 88/100 PIXELS IGNITED // VOID CORRUPTION DETECTED IN SECTOR 4 // HEART KING @AYANFE DEFENDING // [ SYSTEM ]</div>
     </div>
 
     <div id="arena">
         <div id="timer">23:59:59</div>
-        <div id="torch-container">
-            <pre id="flame-ascii"></pre>
-            <div id="torch-handle">
-                </div>
-        </div>
-    </div>
+        <div id="flame-grid">
+            </div>
+        <div id="handle-base"></div> </div>
 
     <div id="ritual">
-        <div class="btn-group">
-            <span id="side-heart" class="active-side">MODE: PURIFY</span>
-            <span id="side-void">MODE: CORRUPT</span>
+        <div class="faction-toggle">
+            <span id="btn-heart" class="selected">ALIGN: HEART</span>
+            <span id="btn-void">ALIGN: VOID</span>
         </div>
         <div id="striker-track">
             <div id="match">STRIKE</div>
         </div>
-        <div style="font-size: 0.6rem; opacity: 0.6;">PROTECT THE 100. DO NOT LET THE HANDLE BREAK.</div>
     </div>
 
     <script>
-        const handle = document.getElementById('torch-handle');
-        const flame = document.getElementById('flame-ascii');
-        const slots = [];
-
-        // 1. BUILD THE TORCH HANDLE (100 BOXES)
-        for (let i = 0; i < 100; i++) {
-            const div = document.createElement('div');
-            div.className = 'slot active';
-            div.innerText = '■';
-            handle.appendChild(div);
-            slots.push(div);
-        }
-
-        // 2. FLAME PHYSICS (BASED ON HEALTHY SLOTS)
-        function updateFlame() {
-            const healthyCount = slots.filter(s => s.classList.contains('active')).length;
-            let ascii = "";
-            const w = 30, h = 20;
-            for (let y = 0; y < h; y++) {
-                let line = "";
-                for (let x = 0; x < w; x++) {
-                    const dist = Math.abs(x - w/2);
-                    const taper = (y/h) * 10;
-                    if (dist < taper && Math.random() < (healthyCount/100) * (y/h)) {
-                        line += Math.random() > 0.5 ? "{" : "}";
-                    } else { line += " "; }
-                }
-                ascii += line + "\n";
-            }
-            flame.textContent = ascii.split('\n').reverse().join('\n');
-        }
-        setInterval(updateFlame, 100);
-
-        // 3. THE INTERACTION (STRIKER)
-        const match = document.getElementById('match');
-        const track = document.getElementById('striker-track');
-        let dragging = false;
+        const grid = document.getElementById('flame-grid');
+        const pixels = [];
         let mode = 'HEART';
 
-        match.addEventListener('mousedown', () => dragging = true);
-        window.addEventListener('mouseup', () => dragging = false);
+        // 1. GENERATE THE TORCH SHAPE (100 BOXES)
+        // We use a simple mask to make it look like a flame
+        const torchMask = [
+            [0,0,0,1,0,0,0],
+            [0,0,1,1,1,0,0],
+            [0,0,1,1,1,0,0],
+            [0,1,1,1,1,1,0],
+            [0,1,1,1,1,1,0],
+            [1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1],
+            [0,1,1,1,1,1,0],
+            [0,1,1,1,1,1,0],
+            [0,0,1,1,1,0,0],
+            [0,0,1,1,1,0,0],
+            [0,0,1,1,1,0,0],
+            [0,0,0,1,0,0,0]
+        ];
+
+        let count = 0;
+        torchMask.forEach((row) => {
+            row.forEach((cell) => {
+                const div = document.createElement('div');
+                div.className = cell === 1 ? 'pixel active' : 'pixel empty';
+                div.innerText = cell === 1 ? '■' : '';
+                grid.appendChild(div);
+                if (cell === 1) pixels.push(div);
+            });
+        });
+
+        // 2. THE STRIKER (DRAG LOGIC)
+        const match = document.getElementById('match');
+        const track = document.getElementById('striker-track');
+        let isDragging = false;
+
+        match.addEventListener('mousedown', () => isDragging = true);
+        window.addEventListener('mouseup', () => isDragging = false);
         window.addEventListener('mousemove', (e) => {
-            if (!dragging) return;
+            if (!isDragging) return;
             const rect = track.getBoundingClientRect();
-            let x = e.clientX - rect.left - 25;
-            x = Math.max(0, Math.min(x, rect.width - 50));
+            let x = e.clientX - rect.left - 30;
+            x = Math.max(0, Math.min(x, rect.width - 60));
             match.style.left = x + 'px';
-            if (x >= rect.width - 55) {
-                dragging = false;
+
+            if (x >= rect.width - 65) {
+                isDragging = false;
                 match.style.left = '0';
-                executeRitual();
+                triggerAction();
             }
         });
 
-        function executeRitual() {
-            const targetIndex = Math.floor(Math.random() * 100);
+        function triggerAction() {
+            const activePixels = pixels.filter(p => p.classList.contains('active') || p.classList.contains('corrupted'));
+            const randomPixel = activePixels[Math.floor(Math.random() * activePixels.length)];
+
             if (mode === 'VOID') {
-                slots[targetIndex].className = 'slot corrupted';
-                slots[targetIndex].innerText = 'X';
+                randomPixel.className = 'pixel corrupted';
+                randomPixel.innerText = 'X';
             } else {
-                const corrupted = slots.find(s => s.classList.contains('corrupted'));
+                // Heart purifies the first corrupted pixel it finds
+                const corrupted = pixels.find(p => p.classList.contains('corrupted'));
                 if (corrupted) {
-                    corrupted.className = 'slot active';
+                    corrupted.className = 'pixel active';
                     corrupted.innerText = '■';
-                    console.log("VOID PLAYER FLASHED!");
                 }
             }
         }
 
-        // Toggle Modes
-        document.getElementById('side-void').onclick = () => { mode = 'VOID'; document.getElementById('side-void').className='active-side'; document.getElementById('side-heart').className=''; };
-        document.getElementById('side-heart').onclick = () => { mode = 'HEART'; document.getElementById('side-heart').className='active-side'; document.getElementById('side-void').className=''; };
+        // 3. FACTION TOGGLE
+        document.getElementById('btn-void').onclick = () => {
+            mode = 'VOID';
+            document.getElementById('btn-void').classList.add('selected');
+            document.getElementById('btn-heart').classList.remove('selected');
+        };
+        document.getElementById('btn-heart').onclick = () => {
+            mode = 'HEART';
+            document.getElementById('btn-heart').classList.add('selected');
+            document.getElementById('btn-void').classList.remove('selected');
+        };
 
+        // 4. TIMER SIMULATION
+        let time = 86399;
+        setInterval(() => {
+            time--;
+            const h = Math.floor(time / 3600).toString().padStart(2, '0');
+            const m = Math.floor((time % 3600) / 60).toString().padStart(2, '0');
+            const s = (time % 60).toString().padStart(2, '0');
+            document.getElementById('timer').innerText = `${h}:${m}:${s}`;
+        }, 1000);
     </script>
 </body>
 </html>

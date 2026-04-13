@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE MASS</title>
+    <style>
+        :root { --bg: #000; --fg: #fff; }
+        body { background: var(--bg); color: var(--fg); font-family: 'Courier New', Courier, monospace; margin: 0; overflow: hidden; display: grid; grid-template-rows: 60px 1fr 120px; height: 100vh; }
+        
+        /* Quadrant 1: Billboard */
+        #billboard { border-bottom: 1px solid var(--fg); overflow: hidden; display: flex; align-items: center; white-space: nowrap; font-weight: bold; }
+        .ticker { animation: scroll 20s linear infinite; font-size: 1.2rem; }
+        @keyframes scroll { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+
+        /* Quadrant 2: The Arena */
+        #arena { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        canvas { max-width: 100%; }
+        #timer { font-size: 3rem; margin-bottom: 20px; }
+
+        /* Quadrant 3: The Ritual */
+        #ritual { border-top: 1px solid var(--fg); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; }
+        #striker-track { width: 80%; height: 2px; background: var(--fg); position: relative; margin-top: 20px; }
+        #match { width: 20px; height: 20px; background: var(--fg); position: absolute; top: -10px; cursor: pointer; }
+
+        /* Quadrant 4: Sidebar (Floating) */
+        #sidebar { position: absolute; right: 0; top: 60px; bottom: 120px; width: 200px; border-left: 1px solid var(--fg); padding: 10px; font-size: 0.8rem; background: var(--bg); }
+
+        .inverted { background: var(--fg) !important; color: var(--bg) !important; }
+    </style>
+</head>
+<body>
+
+    <div id="billboard">
+        <div class="ticker">[ ALERT ] @VOID_WRAITH IS SNUFFING THE CORE // HEART KING @AYANFE STANDS STRONG</div>
+    </div>
+
+    <div id="arena">
+        <div id="timer">04:20:00</div>
+        <canvas id="flameCanvas"></canvas>
+    </div>
+
+    <div id="sidebar">
+        <div>[ VULTURES ]</div>
+        <div id="waitlist-count">Position: #42</div>
+        <hr>
+        <div>[ DYING SPARKS ]</div>
+        <div style="color:red">@User_X (2m)</div>
+    </div>
+
+    <div id="ritual">
+        <div>CHOOSE YOUR ALIGNMENT: [HEART] | [VOID]</div>
+        <div id="striker-track">
+            <div id="match"></div>
+        </div>
+    </div>
+
+    <script>
+        // Simple Flame Animation
+        const canvas = document.getElementById('flameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 300; canvas.height = 400;
+
+        let particles = [];
+        function createParticle() {
+            return { x: 150, y: 380, vx: Math.random() * 2 - 1, vy: Math.random() * -3 - 1, life: 100 };
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (particles.length < 100) particles.push(createParticle());
+            
+            particles.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy; p.life--;
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(p.x, p.y, 2, 2);
+                if (p.life <= 0) particles[i] = createParticle();
+            });
+            requestAnimationFrame(draw);
+        }
+        draw();
+
+        // Match Dragging Logic
+        const match = document.getElementById('match');
+        const track = document.getElementById('striker-track');
+        let isDragging = false;
+
+        match.addEventListener('mousedown', () => isDragging = true);
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            let x = e.clientX - track.getBoundingClientRect().left;
+            x = Math.max(0, Math.min(x, track.offsetWidth));
+            match.style.left = x + 'px';
+            if (x >= track.offsetWidth - 5) {
+                isDragging = false;
+                alert("RITUAL COMPLETE. STREAK SECURED.");
+                match.style.left = '0';
+            }
+        });
+        document.addEventListener('mouseup', () => isDragging = false);
+    </script>
+</body>
+</html>

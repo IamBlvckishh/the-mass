@@ -3,101 +3,287 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THE MASS</title>
+    <title>THE MASS | PROTOCOL 02</title>
     <style>
-        :root { --bg: #000; --fg: #fff; }
-        body { background: var(--bg); color: var(--fg); font-family: 'Courier New', Courier, monospace; margin: 0; overflow: hidden; display: grid; grid-template-rows: 60px 1fr 120px; height: 100vh; }
-        
-        /* Quadrant 1: Billboard */
-        #billboard { border-bottom: 1px solid var(--fg); overflow: hidden; display: flex; align-items: center; white-space: nowrap; font-weight: bold; }
-        .ticker { animation: scroll 20s linear infinite; font-size: 1.2rem; }
-        @keyframes scroll { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+        :root {
+            --bg: #000;
+            --fg: #fff;
+            --glitch: #ff0000;
+        }
 
-        /* Quadrant 2: The Arena */
-        #arena { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        canvas { max-width: 100%; }
-        #timer { font-size: 3rem; margin-bottom: 20px; }
+        * { box-sizing: border-box; }
 
-        /* Quadrant 3: The Ritual */
-        #ritual { border-top: 1px solid var(--fg); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; }
-        #striker-track { width: 80%; height: 2px; background: var(--fg); position: relative; margin-top: 20px; }
-        #match { width: 20px; height: 20px; background: var(--fg); position: absolute; top: -10px; cursor: pointer; }
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: grid;
+            grid-template-rows: 50px 1fr 150px;
+            height: 100vh;
+            text-transform: uppercase;
+        }
 
-        /* Quadrant 4: Sidebar (Floating) */
-        #sidebar { position: absolute; right: 0; top: 60px; bottom: 120px; width: 200px; border-left: 1px solid var(--fg); padding: 10px; font-size: 0.8rem; background: var(--bg); }
+        /* QUADRANT 1: THE BILLBOARD */
+        #billboard {
+            border-bottom: 1px solid var(--fg);
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            background: var(--bg);
+            z-index: 10;
+        }
 
-        .inverted { background: var(--fg) !important; color: var(--bg) !important; }
+        .ticker {
+            white-space: nowrap;
+            display: inline-block;
+            animation: scroll 25s linear infinite;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        @keyframes scroll {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* QUADRANT 2: THE ARENA */
+        #arena {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+        }
+
+        #timer-display {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: -2px;
+            margin-bottom: 10px;
+            z-index: 5;
+        }
+
+        #ascii-torch {
+            font-size: 10px;
+            line-height: 9px;
+            color: var(--fg);
+            text-align: center;
+            user-select: none;
+            opacity: 0.9;
+        }
+
+        /* QUADRANT 3: THE RITUAL */
+        #ritual {
+            border-top: 1px solid var(--fg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            padding: 20px;
+            background: var(--bg);
+        }
+
+        .faction-select {
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        #striker-box {
+            width: 80%;
+            max-width: 500px;
+            height: 40px;
+            border: 1px solid var(--fg);
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        #striker-handle {
+            width: 40px;
+            height: 100%;
+            background: var(--fg);
+            cursor: pointer;
+            position: absolute;
+            left: 0;
+            transition: background 0.2s;
+        }
+
+        #striker-handle:active {
+            background: #888;
+        }
+
+        /* QUADRANT 4: THE SIDEBAR (VULTURES) */
+        #sidebar {
+            position: absolute;
+            right: 0;
+            top: 50px;
+            bottom: 150px;
+            width: 180px;
+            border-left: 1px solid var(--fg);
+            padding: 15px;
+            font-size: 0.7rem;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+        }
+
+        .vulture-item { margin-bottom: 10px; opacity: 0.6; }
+        .critical { color: var(--glitch); animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* INVERSION FOR VOID DOMINANCE */
+        body.void-mode {
+            background: var(--fg);
+            color: var(--bg);
+        }
+        body.void-mode * { border-color: var(--bg) !important; }
+        body.void-mode #striker-handle { background: var(--bg); }
+        body.void-mode #billboard { border-bottom: 1px solid var(--bg); }
+
+        @media (max-width: 600px) {
+            #sidebar { display: none; } /* Hide sidebar on mobile to save space */
+            #timer-display { font-size: 2.5rem; }
+        }
     </style>
 </head>
 <body>
 
     <div id="billboard">
-        <div class="ticker">[ ALERT ] @VOID_WRAITH IS SNUFFING THE CORE // HEART KING @AYANFE STANDS STRONG</div>
-    </div>
-
-    <div id="arena">
-        <div id="timer">04:20:00</div>
-        <canvas id="flameCanvas"></canvas>
-    </div>
-
-    <div id="sidebar">
-        <div>[ VULTURES ]</div>
-        <div id="waitlist-count">Position: #42</div>
-        <hr>
-        <div>[ DYING SPARKS ]</div>
-        <div style="color:red">@User_X (2m)</div>
-    </div>
-
-    <div id="ritual">
-        <div>CHOOSE YOUR ALIGNMENT: [HEART] | [VOID]</div>
-        <div id="striker-track">
-            <div id="match"></div>
+        <div class="ticker">
+            [ STATUS ] 100/100 SPARKS ACTIVE // VOID WRAITH @SHADOW IS SNUFFING THE MASS // HEART KING @AYANFE STREAK: 42 DAYS // [ STATUS ]
         </div>
     </div>
 
+    <div id="arena">
+        <div id="timer-display">23:59:59</div>
+        <pre id="ascii-torch"></pre>
+    </div>
+
+    <div id="sidebar">
+        <div style="margin-bottom: 20px; font-weight: bold;">[ VULTURES ]</div>
+        <div class="vulture-item">01. @USER_A</div>
+        <div class="vulture-item">02. @USER_B</div>
+        <hr style="border: 0; border-top: 1px solid var(--fg); margin: 15px 0;">
+        <div style="margin-bottom: 10px; font-weight: bold;">[ DYING SPARKS ]</div>
+        <div class="vulture-item critical">@USER_Z (02M 14S)</div>
+        <div class="vulture-item critical">@USER_Y (08M 45S)</div>
+    </div>
+
+    <div id="ritual">
+        <div class="faction-select">
+            ALIGNMENT: <span style="text-decoration: underline;">HEART</span> | VOID
+        </div>
+        <div id="striker-box">
+            <div id="striker-handle"></div>
+        </div>
+        <div style="font-size: 0.6rem; margin-top: 10px; opacity: 0.5;">DRAG TO IGNITE YOUR DAILY RITUAL</div>
+    </div>
+
     <script>
-        // Simple Flame Animation
-        const canvas = document.getElementById('flameCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 300; canvas.height = 400;
+        // --- 1. THE ASCII TORCH ENGINE ---
+        const torchElement = document.getElementById('ascii-torch');
+        const width = 42;
+        const height = 28;
+        let activePlayers = 100; // This will connect to Supabase later
 
-        let particles = [];
-        function createParticle() {
-            return { x: 150, y: 380, vx: Math.random() * 2 - 1, vy: Math.random() * -3 - 1, life: 100 };
-        }
+        function generateFlame() {
+            let frame = "";
+            const centerX = width / 2;
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (particles.length < 100) particles.push(createParticle());
-            
-            particles.forEach((p, i) => {
-                p.x += p.vx; p.y += p.vy; p.life--;
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(p.x, p.y, 2, 2);
-                if (p.life <= 0) particles[i] = createParticle();
-            });
-            requestAnimationFrame(draw);
-        }
-        draw();
-
-        // Match Dragging Logic
-        const match = document.getElementById('match');
-        const track = document.getElementById('striker-track');
-        let isDragging = false;
-
-        match.addEventListener('mousedown', () => isDragging = true);
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            let x = e.clientX - track.getBoundingClientRect().left;
-            x = Math.max(0, Math.min(x, track.offsetWidth));
-            match.style.left = x + 'px';
-            if (x >= track.offsetWidth - 5) {
-                isDragging = false;
-                alert("RITUAL COMPLETE. STREAK SECURED.");
-                match.style.left = '0';
+            for (let y = 0; y < height; y++) {
+                let line = "";
+                for (let x = 0; x < width; x++) {
+                    const distToCenter = Math.abs(x - centerX);
+                    
+                    // The parabolic shape of a torch flame
+                    const maxAllowedWidth = (y / height) * 12 + 1;
+                    
+                    if (distToCenter < maxAllowedWidth) {
+                        // Density based on population and "heat"
+                        const density = (activePlayers / 100) * (y / height);
+                        
+                        if (Math.random() < density) {
+                            // Character types based on height
+                            if (y > height * 0.8) line += "@"; // Core/Fuel
+                            else if (y > height * 0.5) line += Math.random() > 0.5 ? "{" : "}"; // Mid
+                            else if (y > height * 0.2) line += Math.random() > 0.5 ? "(" : ")"; // Flickers
+                            else line += Math.random() > 0.7 ? "*" : "."; // Tips
+                        } else {
+                            line += " ";
+                        }
+                    } else {
+                        line += " ";
+                    }
+                }
+                frame += line + "\n";
             }
+            // Reverse to make it burn upwards
+            torchElement.textContent = frame.split('\n').reverse().join('\n');
+        }
+
+        setInterval(generateFlame, 120); // Steady terminal flicker
+
+        // --- 2. THE STRIKER MECHANICS ---
+        const handle = document.getElementById('striker-handle');
+        const box = document.getElementById('striker-box');
+        let dragging = false;
+
+        handle.addEventListener('mousedown', () => dragging = true);
+        handle.addEventListener('touchstart', () => dragging = true);
+
+        window.addEventListener('mousemove', (e) => {
+            if (!dragging) return;
+            moveHandle(e.clientX);
         });
-        document.addEventListener('mouseup', () => isDragging = false);
+
+        window.addEventListener('touchmove', (e) => {
+            if (!dragging) return;
+            moveHandle(e.touches[0].clientX);
+        });
+
+        window.addEventListener('mouseup', () => dragging = false);
+        window.addEventListener('touchend', () => dragging = false);
+
+        function moveHandle(clientX) {
+            const rect = box.getBoundingClientRect();
+            let x = clientX - rect.left;
+            x = Math.max(0, Math.min(x, rect.width - handle.offsetWidth));
+            handle.style.left = x + 'px';
+
+            // Completion check
+            if (x >= rect.width - handle.offsetWidth - 2) {
+                dragging = false;
+                handle.style.left = '0';
+                completeRitual();
+            }
+        }
+
+        function completeRitual() {
+            alert("RITUAL SIGNED: STREAK PRESERVED.");
+            // Here is where we will trigger the Supabase update
+        }
+
+        // --- 3. THE GLOBAL TIMER (SIMULATION) ---
+        let time = 86399; // 23:59:59
+        function updateTimer() {
+            const h = Math.floor(time / 3600).toString().padStart(2, '0');
+            const m = Math.floor((time % 3600) / 60).toString().padStart(2, '0');
+            const s = (time % 60).toString().padStart(2, '0');
+            document.getElementById('timer-display').textContent = `${h}:${m}:${s}`;
+            if (time > 0) time--;
+            
+            // Trigger Void Mode (Inversion) if under 1 hour
+            if (time < 3600) {
+                document.body.classList.add('void-mode');
+            } else {
+                document.body.classList.remove('void-mode');
+            }
+        }
+        setInterval(updateTimer, 1000);
     </script>
 </body>
 </html>
